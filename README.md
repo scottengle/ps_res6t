@@ -1401,3 +1401,215 @@ Using unicode code points can sometimes lead to unusual length values assigned t
     console.log(wave.repeat(10));
     // outputs "🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊"
 
+# Number Extensions
+
+## parseInt
+
+`parseInt` has been moved to a function on the Number type. While it still exists on the global namespace, you should switch to the Number variant as they are identical.
+
+    console.log(Number.parseInt === parseInt); // outputs "true"
+
+## parseFloat
+
+`parseFloat` has been moved as well.
+
+    console.log(Number.parseFloat === parseFloat); // outputs "true"
+
+## isNaN
+
+The behavior of `isNaN` is slightly different now, and has been moved to the Number type.
+
+    let s = 'NaN'; // this is a string, not a true NaN
+    console.log(isNaN(s)); // outputs "true"
+    console.log(Number.isNaN(s)); // outputs "false"
+
+The global version of the function will convert the string prior to evaluation.
+
+## isFinite
+
+The behavior of `isFinite` is slightly different now, and has been moved to the Number type.
+
+    let s = '8000'; // this is a string, not a number
+    console.log(isFinite(s)); // outputs "true"
+    console.log(Number.isFinite(s)); // outputs "false"
+
+The global version of the function will convert the string prior to evaluation.
+
+## isInteger
+
+`Number.isInteger` evaluates numbers and returns a boolean value if they are integers.
+
+    let sum = 408.2;
+    console.log(Number.isInteger(sum)); // returns "false"
+
+Additional test cases:
+
+    console.log(Number.isInteger(3)); // returns "true"
+    console.log(Number.isInteger(NaN)); // returns "false"
+    console.log(Number.isInteger(Infinity)); // returns "false"
+    console.log(Number.isInteger(undefined)); // returns "false"
+
+## isSafeInteger
+
+`Number.isSafeInteger` evaluates a number and returns a boolean value if the number can be accurately represented using floating point notation. Remember, floating point values lose precision when very large.
+
+    let a = Math.pow(2, 53) - 1;
+    console.log(Number.isSafeInteger(a)); // outputs "true"
+    a = Math.pow(2, 53);
+    console.log(Number.isSafeInteger(a)); // outputs "false"
+
+This implies that the largest safe integer that can be stored is (2 ^ 53) - 1 or 9,007,199,254,740,991. This also happens to be the value of `Number.MAX_SAFE_INTEGER` static property (see below).
+
+## Number Constants
+
+There are three new constants added to the Number type.
+
+    console.log(Number.EPSILON); // outputs "2.220446049250313e-16"
+    console.log(Number.MAX_SAFE_INTEGER); // outputs "9007199254740991"
+    console.log(Number.MIN_SAFE_INTEGER); // outputs "-9007199254740991"
+
+# Math Extensions
+
+## Hyperbolic Functions
+
+New hyperbolic functions:
+
+    cosh()
+    acosh()
+    sinh()
+    asinh()
+    tanh()
+    atanh()
+    hypot()
+
+## Artithmetic Functions
+
+New arithmetic functions:
+
+    cbrt()    cube root
+    clz32()   count leading zeros (32 bit integers)
+    expm1()   equal to exp(x) - 1
+    log2()    log base 2
+    log10()   log base 10
+    log1p()   equal to log(x+1)
+    imul()    32 bit integer multiplication
+
+## Miscellaneous Functions
+
+Other functions:
+
+    sign()    the number's sigh: 1, -1, 0, -0, NaN
+    trunc()   the integer part of a number, similar to floor
+    fround()  round to the nearest 32 bit floating point value
+
+## sign
+
+`sign` examples:
+
+    console.log(sign(0));  // outputs "0"
+    console.log(sign(-0));  // outputs "-0 (0 in Microsoft's Edge browser)"
+    console.log(sign(-20));  // outputs "-1"
+    console.log(sign(20));  // outputs "1"
+    console.log(sign(NaN));  // outputs "NaN"
+
+## cbrt
+
+`cbrt` examples:
+
+    console.log(Math.cbrt(27));  // outputs "3"
+
+## truncate
+
+`truncate` examples:
+
+    console.log(Math.trunc(27.1));  // outputs 27
+    console.log(Math.trunc(-27.9));  // outputs -27
+
+# RegExp Extensions
+
+## Astral Plane Unicode Characters
+
+Regular expressions now work with the new Astral Plane unicode characters. You need to pass additional arguments.
+
+    let pattern = /\u{1f3c4}/;
+    console.log(pattern.test('🏄'')); // outputs "false"
+
+Append `u` to the end of the pattern to explicitly specify astral plane unicode characters.
+
+    let pattern = /\u{1f3c4}/u;
+    console.log(pattern.test('🏄'')); // outputs "true"
+
+Another example:
+
+    let pattern = /^.Surfer/;
+    console.log(pattern.test('🏄'Surfer')); // outputs "false"
+    
+In es5, astral plane characters are actually length 2:
+
+    let pattern = /^.Surfer/u;
+    console.log(pattern.test('🏄'Surfer')); // outputs "true"
+    
+## The "sticky" property
+
+The `sticky` property reflects whether or not the search is sticky, meaning that searches start at the index specified by the `lastIndex` property. By default, `pattern.lastIndex` is `0`.
+
+    let pattern = /900/y;
+    console.log(pattern.lastIndex);  // outputs "0"
+    console.log(pattern.test('800900'));  // outputs "false"
+
+You can manually set `property.lastIndex`:
+
+    let pattern = /900/y;
+    pattern.lastIndex = 3;
+    console.log(pattern.lastIndex);  // outputs "3"
+    console.log(pattern.test('800900'));  // outputs "true"
+
+## Flags
+
+There's a new property on the RegExp object called `flags`, which holds the value of all flags added to the regular expression.
+
+    let pattern = /900/yg;
+    console.log(pattern.flags); // outputs "gy"
+
+The order here is important. `pattern.flags` will always return flags in the order "gimuy".
+
+# Function Extensions
+
+## Function.name
+
+`Function.name` is a new property that holds the name of the function:
+
+    let fn = function calc() {
+      return 0;
+    };
+    console.log(fn.name); // outputs "calc"
+
+In the case of anonymous function expressions, the name is assigned as the name of the variable the function is assigned to.
+
+    let fn = function() {
+      return 0;
+    };
+    console.log(fn.name); // outputs "fn"
+
+Another example:
+
+    let fn = function() {
+      return 0;
+    };
+    let newFn = fn;
+    console.log(newFn.name); // outputs "fn"
+
+This works on classes and class methods, too:
+
+    class Calculator {
+      constructor() {
+      }
+      add() {
+      }
+    }
+    let c = new Calculator();
+    console.log(Calculator.name); // outputs "Calculator"
+    console.log(c.add.name); // outputs "add"
+
+`Function.name` is not writable, but is configurable with the `Object.defineProperty()` method.
+
