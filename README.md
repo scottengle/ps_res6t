@@ -200,7 +200,7 @@ The 'rest' operator (basically an elipsis: '...') is used to bundle up 'the rest
     var showCategories = function(productId, ...categories) {
       console.log(categories);
     };
-    showCategories(123, 'search', 'advertising'); // outputs "true"
+    showCategories(123, 'search', 'advertising'); // outputs "['search', 'advertising']"
 
 The 'rest' operator bundles up all of the unassigned function parameters.
 
@@ -783,7 +783,7 @@ Adding a method to a class is similar to adding that method to the object's prot
 
 You can define constructors.
 
-    class TAsk {
+    class Task {
       constructor() {
         console.log('constructing Task');
       }
@@ -989,7 +989,7 @@ You initialize instance variables using class constructors.
 Objects can go out of scope if you use let, const or var in the constructor.
 
     class Project {
-      constructor() { let.location = "France"; }
+      constructor() { let location = "France"; }
     }
     class SoftwareProject extends Project {
       constructor() {
@@ -1187,13 +1187,13 @@ https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
 
 ### toStringTag
 
-Normally, calling toString isn't very helpful.
+Normally, calling `toString()` isn't very helpful.
 
     let Blog = function() {};
     let blog = new Blog();
     console.log( blog.toString() ); // outputs [object object]
 
-The toStringTag is added directly to the prototype.
+The `toStringTag` is added directly to the prototype.
 
     let Blog = function() {};
     Blog.prototype[Symbol.toStringTag] = 'Blog Class';
@@ -1202,13 +1202,13 @@ The toStringTag is added directly to the prototype.
 
 ### isConcatSpreadable
 
-Normally, Array.concat spreads out array values.
+Normally, `Array.concat` spreads out array values.
 
     let values = [8, 12, 16];
     console.log([].concat(values));
     // outputs "[8, 12, 16]"
 
-Setting isConcatSpreadable prevents this behavior.
+Setting `isConcatSpreadable` prevents this behavior.
 
     let values = [8, 12, 16];
     values[Symbol.isConcatSpreadable] = false;
@@ -1222,7 +1222,7 @@ Setting isConcatSpreadable prevents this behavior.
     console.log(sum);
     // outputs 8, 12, 16100
 
-toPrimitive lets you define a function that is called when an object's value is evaluated.
+`toPrimitive` lets you define a function that is called when an object's value is evaluated.
 
     let values = [8, 12, 16];
     values[Symbol.toPrimitive] = function (hint) {
@@ -1235,4 +1235,169 @@ toPrimitive lets you define a function that is called when an object's value is 
     // default
     // 142
 
+# Object Extensions
+
+## Object.setPrototypeOf
+
+`setPrototypeOf` assigns the prototype of an object to that of the second object.
+
+    let a = {
+      x: 1
+    };
+
+    let b = {
+      y: 2
+    }
+
+    Object.setPrototypeOf(a, b);
+    console.log(a.y);
+    // outputs "2"
+
+## Object.assign
+
+`assign` populates a target with the properties of other arguments passed as parameters.
+
+    let a = { a: 1 }, b = { b: 2 };
+
+    let target = {};
+    Object.assign(target, a, b);
+    console.log(target);
+    // outputs "{a: 1, b: 2}"
+
+Properties with the same key will be overridden by subsequent properties.
+
+    let a = { a: 1 }, b = { a: 5, b: 2 };
+
+    let target = {};
+    Object.assign(target, a, b);
+    console.log(target);
+    // outputs "{a: 5, b: 2}"
+
+`Object.assign` requires properties on objects to be enumerable.
+
+    let a = { a: 1 }, b = { a: 5, b: 2 };
+
+    Object.defineProperty(b, 'c', {
+      value: 10,
+      enumerable: false
+    });
+
+    let target = {};
+    Object.assign(target, a, b);
+    console.log(target);
+    // outputs "{a: 5, b: 2}"
+
+`Object.assign` doesn't walk up the prototype chain.
+
+    let a = { a: 1 }, b = { a: 5, b: 2 }, c = { c: 20 };
+
+    Object.setPrototypeOf(b, c);
+
+    let target = {};
+    Object.assign(target, a, b);
+    console.log(target);
+    // outputs "{a: 5, b: 2}"
+
+## Object.is
+
+`Object.is` compares if two objects are exactly equal to each other.
+
+    let amount = NaN;
+    console.log(amount === amount);
+    // outputs "false"
+    console.log(Object.is(amount, amount));
+    // outputs "true"
+
+`Object.is` fixes some of the more confusing rules of `===` comparison.
+
+    let amount = 0, total = -0;
+    console.log(amount === total);
+    // outputs "true"
+    console.log(Object.is(amount, total));
+    // outputs "false"
+
+## Object.getOwnPropertySymbols
+
+`Object.getOwnPropertySymbols` is a static function that returns an array of property symbols on an object.
+
+    let article = {
+      title: 'Whiteface Mountain',
+      [Symbol.for('article')]: 'My Article'
+    }
+
+    console.log(Object.getOwnPropertySymbols(article));
+    // outputs "[ Symbol(article) ]"
+
+# String Extensions
+
+## startsWith
+
+`startsWith` returns true if a string starts with a given string.
+
+    let title = 'Santa Barbara Surf Riders';
+    console.log(title.startsWith('Santa'));
+    // outputs "true"
+
+## endsWith
+
+`endsWith` returns true if a string ends with a given string.
+
+    let title = 'Santa Barbara Surf Riders';
+    console.log(title.endsWith('Surf'));
+    // outputs "false"
+
+## includes
+
+`includes` returns true if a string contains the given string.
+
+    let title = 'Santa Barbara Surf Riders';
+    console.log(title.includes('ba'));
+    // outputs "true"
+
+## Unicode Code Points
+
+Unicode code points now support "Astral Plane Values" (unicode characters with more than 4 hex values).
+
+    var title = "Surfer's \u{1f3c4} Blog";
+    console.log(title);
+    // outputs "Surfer's 🏄 Blog"
+
+## normalize
+
+Using unicode code points can sometimes lead to unusual length values assigned to strings. `normalize` will help correct this.
+
+    var title = "Mazatla\u0301n";
+    console.log(title + " " + title.length);
+    // outputs "Mazatlán 9"
+    console.log(title + " " + title.normalize().length);
+    // outputs "Mazatlán 8"
+
+## codePointAt
+
+    var title = "Mazatla\u0301n";
+    console.log(title.normalize().codePointAt(7).toString(16));
+    // outputs "6e" (the hex value for á)
+
+## fromCodePoint
+
+`fromCodePoint` will set a string from a hex value.
+
+    console.log(String.fromCodePoint(0x1f3c4));
+    // outputs "🏄"
+
+## raw
+
+`String.raw` performs interpolation without processing any other characters (such as code points and new lines) in the string.
+
+    let title = 'Surfer';
+    let output = String.raw`${title} \u{1f3c4}\n`
+    // outputs "Surfer \u{1f3c4}\n"
+
+## repeat
+
+`String.repeat` repeats a string some number of times.
+
+    let wave = '\u{1f30a}';
+    console.log(wave.repeat(10));
+    // outputs "🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊"
 
