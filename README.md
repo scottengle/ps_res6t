@@ -1494,6 +1494,12 @@ New arithmetic functions:
     log1p()   equal to log(x+1)
     imul()    32 bit integer multiplication
 
+### cbrt
+
+`cbrt` examples:
+
+    console.log(Math.cbrt(27));  // outputs "3"
+
 ## Miscellaneous Functions
 
 Other functions:
@@ -1502,7 +1508,7 @@ Other functions:
     trunc()   the integer part of a number, similar to floor
     fround()  round to the nearest 32 bit floating point value
 
-## sign
+### sign
 
 `sign` examples:
 
@@ -1512,13 +1518,7 @@ Other functions:
     console.log(sign(20));  // outputs "1"
     console.log(sign(NaN));  // outputs "NaN"
 
-## cbrt
-
-`cbrt` examples:
-
-    console.log(Math.cbrt(27));  // outputs "3"
-
-## truncate
+### trunc
 
 `truncate` examples:
 
