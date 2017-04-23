@@ -1542,7 +1542,7 @@ Append `u` to the end of the pattern to explicitly specify astral plane unicode 
 Another example:
 
     let pattern = /^.Surfer/;
-    console.log(pattern.test('🏄'Surfer')); // outputs "false"
+    console.log(pattern.test('🏄Surfer')); // outputs "false"
     
 In es5, astral plane characters are actually length 2:
 
