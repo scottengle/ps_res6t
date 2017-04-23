@@ -1532,12 +1532,12 @@ Other functions:
 Regular expressions now work with the new Astral Plane unicode characters. You need to pass additional arguments.
 
     let pattern = /\u{1f3c4}/;
-    console.log(pattern.test('🏄'')); // outputs "false"
+    console.log(pattern.test('🏄')); // outputs "false"
 
 Append `u` to the end of the pattern to explicitly specify astral plane unicode characters.
 
     let pattern = /\u{1f3c4}/u;
-    console.log(pattern.test('🏄'')); // outputs "true"
+    console.log(pattern.test('🏄')); // outputs "true"
 
 Another example:
 
@@ -1547,7 +1547,7 @@ Another example:
 In es5, astral plane characters are actually length 2:
 
     let pattern = /^.Surfer/u;
-    console.log(pattern.test('🏄'Surfer')); // outputs "true"
+    console.log(pattern.test('🏄Surfer')); // outputs "true"
     
 ## The "sticky" property
 
