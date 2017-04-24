@@ -2709,8 +2709,117 @@ The fourth argument to `Reflect.set` is the "object receiver", or the value of `
 
 ## Proxies Defined
 
+Proxies are a pattern whereby you want to control or restrict access to an object by use of a proxy object. In ES6, the proxy is called a "handler object", which is a wrapper around the target object (or function). The handler object has "traps", which is what the Reflect API was designed for. The traps are methods that can be called from some third party object.
+
 ## Available Traps
+
+These are all the traps we can set on a proxy object. Basically, any API method in the Reflect API can be used as a trap:
+
+    handler.construct()           handler.defineProperty()
+                                  handler.deleteProperty()
+    handler.apply()               handler.getOwnPropertyDescriptor()
+    
+    handler.getPrototypeOf()      handler.preventExtensions()
+    handler.setPrototypeOf()      handler.isExtensible()
+
+    handler.get()
+    handler.set()
+    handler.has()
+    handler.ownKeys()
+
+Untrappable object usage:
+
+    Comparisons ( == and === )
+    typeof and instanceof
+    Operations (target + " ")
+    String ( target )
 
 ## Get by Proxy
 
+The second argument to the Proxy constructor is an object literal with the defined traps:
+
+    function Employee () {
+      this.name = 'Charlie Brown';
+      this.salary = 0;
+    }
+    var e = new Employee();
+
+    // you need to use the `new` keyword
+    var p = new Proxy(e, {
+      get: function (target, prop, receiver) {
+        return 'Attempted access: ' + prop;
+      }
+    });
+
+    console.log(p.salary); // outputs "Attempted access: salary"
+
+Normally, you return the values:
+
+    function Employee () {
+      this.name = 'Charlie Brown';
+      this.salary = 0;
+    }
+    var e = new Employee();
+
+    // you need to use the `new` keyword
+    var p = new Proxy(e, {
+      get: function (target, prop, receiver) {
+        // you can add any business logic here that suits your needs
+        return Reflect.get(target, prop, receiver);
+      }
+    });
+
+    console.log(p.salary); // outputs "0"
+
 ## Calling Functions by Proxy
+
+You can also proxy functions:
+
+    function getId() {
+      return 55;
+    }
+
+    var p = new Proxy(getId, {
+      apply: function (target, thisArg, argumentsList) {
+        return Reflect.apply(target, thisArg, argumentsList);
+      }
+    });
+
+    console.log( p() ); // outputs "55"
+
+## A Proxy as a Prototype
+
+You can use a proxy as a prototype, giving you control over the prototype of an object.
+
+    var t = {
+      tableId: 99
+    };
+
+    var p = new Proxy({}, {
+      get: function (target, prop, receiver) {
+        return 'Property ' + prop + ' doesn\'t exist...';
+      }
+    });
+
+    Object.setPrototypeOf(t, p);
+
+    console.log(t.tableId); // outputs "99"
+    console.log(t.size);    // outputs "Property size doesn't exist..."
+
+## Revocable Proxies
+
+Proxy access can be revoked when access is no longer desirable, using `Proxy.revocable`:
+
+    var t = {
+      tableId: 99
+    };
+
+    let { proxy, revoke } = Proxy.revocable(t, {
+      get: function (target, prop, receiver) {
+        return Reflect.get(target, prop, receiver) + 100;
+      }
+    });
+
+    console.log(proxy.tableId); // outputs "199"
+    revoke();
+    console.log(proxy.tableId); // "TypeError: Cannot perform 'get' on a proxy that has been revoked"
