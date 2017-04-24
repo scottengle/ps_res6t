@@ -1995,3 +1995,434 @@ With `Promise.race`, the handled result is the result of the first completed pro
     // (after 5 seconds)
     // outputs "Success!"
 
+# Arrays and Collections
+
+## Array Extensions
+
+### Array.of
+
+`Array.of` creates an array using the elements passed to the function.
+
+    let salaries = Array.of(90000);
+    console.log(salaries.length); // outputs "1"
+    console.log(salarlies[0]); // outputs "90000"
+
+### Array.from
+
+`Array.from` lets you create an array using an existing array and a transform function.
+
+    let amounts = [800, 810, 820];
+    let salaries = Array.from(amounts, v => v+100);
+    console.log(salaries); // outputs "[900, 910, 920]"
+
+In the above example, we're used a lambda function, but you could also use normal function
+declaration. The function declaration is on one line for clarity. The third parameter to 
+`Array.from` is the `this` context for the transform function. This will not work with arrow
+functions.
+
+    let amounts = [800, 810, 820];
+    let salaries = Array.from(amounts, function (v) {return v + this.adjustment;}, {adjustment: 50})
+    console.log(salaries); // outputs "[850, 860, 870]"    
+
+### Array.fill
+
+`Array.fill` will set each element within the array to the specified value:
+
+    let salaries = [800, 810, 820];
+    salaries.fill(900);
+    console.log(salaries); // outputs "[900, 900, 900]"
+
+You can also specify the start index and end index:
+
+    let salaries = [800, 810, 820];
+    salaries.fill(900, 1);
+    console.log(salaries); // outputs "[800, 900, 900]"
+
+The end index is non-inclusive:
+
+    let salaries = [800, 810, 820];
+    salaries.fill(900, 1, 2);
+    console.log(salaries); // outputs "[800, 900, 820]"
+
+If you pass a negative value as the second argument to `Array.fill` it starts at the end of the index.
+
+    let salaries = [600, 700, 800];
+    salaries.fill(900, -1);
+    console.log(salaries); // outputs "[600, 700, 900]"
+
+### Array.find
+
+`Array.find` lets you scan the array using an evaluation function. The function will return the first value it finds.
+
+    let salaries = [600, 700, 800];
+    let result = salaries.find(value => values >= 650);
+    condole.log(result); // outputs "700"
+
+### Array.findIndex
+
+`Array.findIndex` lets you find the index instead of the value.
+
+    let salaries = [600, 700, 800];
+    let result = salaries.findIndex(function (value, index, array) {
+      return value === this;
+    }, 700);
+    console.log(result); // outputs "1"
+
+### Array.copyWithin
+
+`Array.copyWithin` copies values inside an array. The first argument is the destination index, while the second argument is the index of the element to begin copying at.
+
+    let salaries = [600, 700, 800];
+    salaries.copyWithin(2, 0);
+    console.log(salaries); // outputs "[600, 700, 600]"
+
+    let ids = [1, 2, 3, 4, 5];
+    ids.copyWithin(0, 1);
+    console.log(ids); // outputs [2, 3, 4, 5, 5];
+
+The third argument is the number of elements to copy.
+
+    let ids = [1, 2, 3, 4, 5];
+    ids.copyWithin(3, 0, 2);
+    console.log(ids); // outputs [1, 2, 3, 1, 2]
+
+### Array.entries
+
+`Array.entries` returns array elements containing [index, value] pairs of the array.
+
+    let ids = ['A', 'B', 'C'];
+    console.log(...ids.entries()); // outputs "[0, 'A'] [1, 'B'] [2, 'C']" 
+
+### Array.keys
+
+`Array.keys` returns the indexes.
+
+    let ids = ['A', 'B', 'C'];
+    console.log(...ids.keys()); // outputs "0 1 2" 
+
+### Array.values
+
+`Array.values` returns the values without indexes.
+
+    let ids = ['A', 'B', 'C'];
+    console.log(...ids.values()); // outputs "A B C" 
+
+## Array Buffer and Typed Arrays
+
+`ArrayBuffer` can be used to store an array of 8-bit bytes.
+
+    let buffer = new ArrayBuffer(1024);
+    console.log(buffer.byteLength); // outputs 1024
+
+You use bracket notation on ArrayBuffers, just like a normal Array.
+
+    let buffer = new ArrayBuffer(1024);
+    buffer[0] = 0xff;
+    console.log(buffer[0]); // outputs "255"
+
+### Typed Arrays
+
+Several new array types:
+
+    Int8Array()           Int32Array()
+    Uint8Array()          Uint32Array()
+    Uint8ClampedArray()
+
+    Int16Array()          Float32Array()
+    Uint16Array()         Float64Array()
+
+An example using the `Int8Array` type. It is important to note that when dealing with signed integers, 0xff is actually "-1":
+
+    let buffer = new ArrayBuffer(1024);
+    let a = new Int8Array(buffer);
+    a[0] = 0xff;
+    console.log(a[0]); // outputs "-1"
+
+The same example using the `Uint8Array` type:
+
+    let buffer = new ArrayBuffer(1024);
+    let a = new Uint8Array(buffer);
+    a[0] = 0xff;
+    console.log(a[0]); // outputs "255"
+
+`Uint8ClampedArray` types won't allow values below 0 or above 255. Values below zero are set to zero. Values above 255 are set to 255.
+
+    let buffer = new ArrayBuffer(1024);
+    let a = new Uint8ClampedArray(buffer);
+    a[0] = -12;
+    console.log(a[0]); // outputs "0"
+
+Care must be taken if you reuse an ArrayBuffer between different array types:
+
+    let buffer = new ArrayBuffer(1024);
+    let a = new Uint8Array(buffer);
+    let b = new Uint16Array(buffer);
+    a[1] = 1;
+    console.log(b[0]); // outputs "256"
+
+The above behavior is due to the "endianness". With the Uint16Array, the bytes are 16-bit wide. Most browsers work in "little-endian" mode, meaning the lower range of the byte is stored first. The resulting value for `b[0]` above is therefore 256.
+
+## DataView and Endianness
+
+A `DataView` is a helper object that provides a number of useful methods.
+
+    let buffer = new ArrayBuffer(1024);
+    let dv = new DataView(buffer);
+    console.log(dv.byteLength); // outputs "1024"
+
+DataViews work with big-endianness by default:
+
+    let buffer = new ArrayBuffer(1024);
+    let dv = new DataView(buffer);
+    dv.setUint8(0, 1);
+    console.log(dv.getUint16(0)); // outputs "256"
+
+`DataView.getUint16` can also take a second argument which will use little-endianness:
+
+    let buffer = new ArrayBuffer(1024);
+    let dv = new DataView(buffer);
+    dv.setUint8(0, 1);
+    console.log(dv.getUint16(0, true)); // outputs "1"
+
+## Map and WeakMap
+
+### Map
+
+Maps and WeakMaps allow you to use objects as keys.
+
+### Map.set
+
+Add elements to a Map using `Map.set`:
+
+    let employee1 = {name: 'Jake'};
+    let employee2 = {name: 'Janet'};
+
+    let employees = new Map();
+    employees.set(employee1, 'ABC');
+    employees.set(employee2, '123');
+
+    console.log(employees.get(employee1)); // outputs "ABC"
+
+You can also create a Map from an existing iterable:
+
+    let employee1 = {name: 'Jake'};
+    let employee2 = {name: 'Janet'};
+
+    let arr = [
+      [employee1, 'ABC'],
+      [employee2, '123']
+    ];
+
+    let employees = new Map(arr);
+    console.log(employees.size); // outputs "2"
+
+### Map.size
+
+You access the size of a map using `Map.size` property:
+
+    let employee1 = {name: 'Jake'};
+    let employee2 = {name: 'Janet'};
+
+    let employees = new Map();
+    employees.set(employee1, 'ABC');
+    employees.set(employee2, '123');
+
+    console.log(employees.size); // outputs "2"
+
+### Map.delete
+
+Remove elements of a Map using `Map.delete` method:
+
+    let employee1 = {name: 'Jake'};
+    let employee2 = {name: 'Janet'};
+
+    let employees = new Map();
+    employees.set(employee1, 'ABC');
+    employees.set(employee2, '123');
+
+    employees.delete(employee2);
+    console.log(employees.size); // outputs "1"
+
+### Map.clear
+
+Remove all elements of a Map using `Map.clear` method:
+
+    let employee1 = {name: 'Jake'};
+    let employee2 = {name: 'Janet'};
+
+    let employees = new Map();
+    employees.set(employee1, 'ABC');
+    employees.set(employee2, '123');
+
+    employees.clear();
+    console.log(employees.size); // outputs "0"
+
+### Map.has
+
+`Map.has` returns a boolean value if the map contains the element specified:
+
+    let employee1 = {name: 'Jake'};
+    let employee2 = {name: 'Janet'};
+
+    let arr = [
+      [employee1, 'ABC'],
+      [employee2, '123']
+    ];
+
+    let employees = new Map(arr);
+    console.log(employees.has(employee2)); // outputs "true"
+
+### Map.values
+
+`Map.values` returns all values in the Map:
+
+    let employee1 = {name: 'Jake'};
+    let employee2 = {name: 'Janet'};
+
+    let arr = [
+      [employee1, 'ABC'],
+      [employee2, '123']
+    ];
+
+    let employees = new Map(arr);
+    let list = [...employees.values()];
+    console.log(list); // outputs "['ABC', '123']"
+
+### Map.entries
+
+`Map.entries` returns an array of map elements:
+
+    let employee1 = {name: 'Jake'};
+    let employee2 = {name: 'Janet'};
+
+    let arr = [
+      [employee1, 'ABC'],
+      [employee2, '123']
+    ];
+
+    let employees = new Map(arr);
+    let list = [...employees.entries()];
+    console.log(list[0][1]); // outputs "ABC"
+
+### WeakMap
+
+WeakMaps won't prevent garbage collection on elements that can be collected.
+
+    let employee1 = {name: 'Jake'};
+    let employee2 = {name: 'Janet'};
+
+    let employees = new WeakMap([
+      [employee1, 'ABC'],
+      [employee2, '123']
+    ]);
+
+    employee1 = null;
+    // wait for GC
+
+    console.log(employees.size); // outputs "undefined"
+
+You can't access the size of a WeakMap.
+
+## Set and WeakSet
+
+### Set
+
+A Set guarantees uniqueness of elements.
+
+Add elements to a Set using `Set.add`:
+
+    let perks = new Set();
+
+    perks.add('Car');
+    perks.add('Boat');
+
+    console.log(perks.size); // outputs "2"
+
+As stated, a Set guarantees uniqueness:
+
+    let perks = new Set();
+
+    perks.add('Car');
+    perks.add('Boat');
+    perks.add('Car');
+
+    console.log(perks.size); // outputs "2"
+
+As with a Map, you can create a Set using an existing iterable:
+
+    let perks = new Set([
+      'Car',
+      'Boat',
+      'Plane'
+    ]);
+
+    Console.log(perks.size); // outputs "3"
+
+A Set is also an iterable:
+
+    let perks = new Set([
+      'Car',
+      'Boat',
+      'Plane'
+    ]);
+
+    let newPerks = new Set(perks);
+    Console.log(newPerks.size); // outputs "3"
+
+Sets have many of the same methods that are on Maps:
+
+    let perks = new Set(['Car', 'Jet']);
+
+    console.log(perks.has('Car'));    // outputs "true"
+    console.log(...perks.keys());     // outputs "Car" "Jet"
+    console.log(...perks.values());   // outputs "Car" "Jet"
+    console.log(...perks.entries());  // outputs ["Car", "Car"] ["Jet", "Jet"]
+
+### WeakSet
+
+WeakSets remove elements from the set once they are garbage collected. WeakSets can't be created from primitive types:
+
+    let perks = new WeakSet([1, 2, 3]); // Runtime Error: WeakSet.prototype.add: 'key' is not an object
+
+WeakSets must be created from objects. As with the WeakMap, you can't access the size property of a WeakSet:
+
+    let p1 = { name: 'Car' };
+    let p2 = { name: 'Boat' };
+    let perks = new WeakSet([p1, p2]);
+    console.log(perks.size); // outputs "undefined"
+
+WeakSets support `WeakSet.has`:
+
+    let p1 = { name: 'Car' };
+    let p2 = { name: 'Boat' };
+    let perks = new WeakSet([p1, p2]);
+    console.log(perks.has(p1)); // outputs "true"
+
+Garbage collected values are removed from the Set:
+
+    let p1 = { name: 'Car' };
+    let p2 = { name: 'Boat' };
+    let perks = new WeakSet([p1, p2]);
+
+    p1 = null;
+
+    // wait for GC
+
+    console.log(perks.has(p1)); // outputs "false"
+
+## Subclassing
+
+Subclassing is not well supported by transpilers, but many types can now be subclassed.
+
+    class Perks extends Array {}
+    let a = Perks.from([5, 10, 15]); // the from method is from Array
+    console.log(a instanceof Perks); // outputs "true"
+    let newArray = a.reverse();
+    console.log(newArray instanceof Perks); // outputs "true"
+    console.log(newArray instanceof Array); // outputs "true"
+
+In the above case, `newArray` is an instance of both `Perks` and `Array`.
+
+# The Reflect API
+
+# The Proxy API
