@@ -829,7 +829,7 @@ Class definitions are not hoisted.
       }
     }
 
-You can use classes as expressions similar to constructor functions in es5.
+You can use classes as expressions similar to constructor functions in ES5.
 
     let newClass = class Task {
       constructor() {
@@ -1544,7 +1544,7 @@ Another example:
     let pattern = /^.Surfer/;
     console.log(pattern.test('🏄Surfer')); // outputs "false"
     
-In es5, astral plane characters are actually length 2:
+In ES5, astral plane characters are actually length 2:
 
     let pattern = /^.Surfer/u;
     console.log(pattern.test('🏄Surfer')); // outputs "true"
@@ -1612,4 +1612,386 @@ This works on classes and class methods, too:
     console.log(c.add.name); // outputs "add"
 
 `Function.name` is not writable, but is configurable with the `Object.defineProperty()` method.
+
+# Iterators, Generators and Promises
+
+These three features are closely interrelated.
+
+## Iterators
+
+Arrays now have a special property called `Symbol.iterator`.
+
+    let ids = [9000, 9001, 9002];
+    console.log(typeof ids[Symbol.iterator]); // outputs "function"
+
+`Symbol.iterator` is a function:
+
+    let ids = [9000, 9001, 9002];
+    let itr = ids[Symbol.iterator]();
+    console.log(itr.next()); // outputs "{done: false, value: 9000}"
+
+The return value is an object with the value, and a flag indicating if we're done iterating.
+
+    let ids = [9000, 9001, 9002];
+    let itr = ids[Symbol.iterator]();
+    itr.next();
+    itr.next();    
+    console.log(itr.next()); // outputs "{done: true, value: 9002}"
+
+When the iterator is exhausted:
+
+    let ids = [9000, 9001, 9002];
+    let itr = ids[Symbol.iterator]();
+    itr.next();
+    itr.next();
+    itr.next();    
+    console.log(itr.next()); // outputs "{done: true, value: undefined}"
+
+You can make your own iterators:
+
+    let idMaker = {
+      [Symbol.iterator]() {
+        let nextId = 8000;
+        return {
+          next() {
+            return {
+              value: nextId++;
+              done: false;
+            };
+          }
+        };
+      }
+    };
+    let itr = idMaker[Symbol.iterator]();
+    console.log(itr.next().value); // outputs "8000"
+    console.log(itr.next().value); // outputs "8001"
+
+For ... Of loops are meant to work with iterators:
+
+    let idMaker = {
+      [Symbol.iterator]() {
+        let nextId = 8000;
+        return {
+          next() {
+            let value = nextId > 8002 ? undefined : nextId++;
+            let done = !value;
+            return { value, done };
+          }
+        };
+      }
+    };
+    for (let v of idMaker) {
+      console.log(v);
+    }
+    // outputs:
+    // 8000
+    // 8001
+    // 8002
+
+## Generators
+
+A generator is a special function that is able to yield and doesn't exist on the stack. We use iterators to call generators multiple times. Generator function names are prepended with an asterisk. When we run a generator, the result is actually an iterator.
+
+    function *process() {
+      yield 8000;
+      yield 8001;
+    }
+    let itr = process();
+    console.log(itr.next()); // outputs "{done: false, value: 8000}"
+
+Since the function returns an iterator, the generator completes in the same way an iterator completes:
+
+    function *process() {
+      yield 8000;
+      yield 8001;
+    }
+    let itr = process();
+    it.next();
+    it.next();
+    console.log(itr.next()); // outputs "{done: true, value: undefined}"
+
+Generators can also be used in for ... of loops:
+
+    function *process() {
+      let nextId = 7000;
+      while(true) {
+        yield(nextId++);
+      }
+    }
+    for (let id of process()) {
+      if (id > 7002) break;
+      console.log(id);
+    }
+    // outputs:
+    // 7000
+    // 7001
+    // 7002
+    
+## Yielding in Generators
+
+    function* process() {
+      let result = yield;
+      console.log(`result is ${result}`);
+    }
+
+    let itr = process();
+    itr.next();
+    itr.next(200);
+    // outputs "result is 200"
+
+You can use `yield` in many places.
+
+    function* process() {
+      let newArray = [yield, yield, yield];
+      console.log(newArray[2]);
+    }
+    let itr = process();
+    itr.next();
+    itr.next(2);
+    itr.next(4);
+    itr.next(42);
+    // outputs "42"
+
+`yield` has a low precedence:
+
+    function* process() {
+      let value = 4 * yield 42;
+      console.log(value);
+    }
+
+    let itr = process();
+    itr.next();
+    itr.next(10);
+    // outputs "Syntax Error"
+
+Iterator delegation (`yield*`) delegates another iterator to the generator:
+
+    function* process() {
+      yield 42;
+      yield* [1, 2, 3];
+    }
+
+    let itr = process();
+
+    console.log(itr.next().value); // outputs "42"
+    console.log(itr.next().value); // outputs "1"
+    console.log(itr.next().value); // outputs "2"
+    console.log(itr.next().value); // outputs "3"
+    console.log(itr.next().value); // outputs "undefined"
+    
+## throw and return
+
+You get better control over generators using throw and return:
+
+    function* process() {
+      try {
+        yield 9000;
+        yield 9001;
+        yield 9002;
+      }
+      catch(e) {
+        // when the exception is caught the generator is completed
+      }
+    }
+
+    let itr = process();
+    console.log(itr.next().value); // outputs "9000"
+    console.log(itr.throw('foo')); // outputs "{done: true, value: undefined}"
+    console.log(itr.next());       // outputs "{done: true, value: undefined}"
+
+If your generator does not have try/catch logic, the exception will bubble up:
+
+    function* process() {
+      yield 9000;
+      yield 9001;
+      yield 9002;
+    }
+
+    let itr = process();
+    console.log(itr.next().value); // outputs "9000"
+    console.log(itr.throw('foo')); // "Exception: foo" and execution terminates
+    console.log(itr.next());
+
+You can use iterator.return to cleanly wrap up an iterator. This is currently only suppored in Firefox.
+
+    function* process() {
+      yield 9000;
+      yield 9001;
+      yield 9002;
+    }
+
+    let itr = process();
+    console.log(itr.next().value);  // outputs "9000"
+    console.log(itr.return('foo')); // outputs "{done: true, value: "foo"}"
+    console.log(itr.next().value);  // outputs "{done: true, value: undefined}"
+
+## Promises
+
+ES6 now has native support for promises.
+
+    function doAsync() {
+      let p = new Promise(function (resolve, reject) {
+        console.log('in promise code');
+        setTimeout(function () {
+          console.log('resolving...');
+          resolve();
+        }, 2000);
+      });
+      return p;
+    }
+
+    let promise = doAsync();
+    // outputs "in promise code"
+    // (after 2 seconds)
+    // outputs "resolving..."
+
+You can also reject a promise:
+
+    function doAsync() {
+      let p = new Promise(function (resolve, reject) {
+        console.log('in promise code');
+        setTimeout(function () {
+          console.log('rejecting...');
+          reject();
+        }, 2000);
+      });
+      return p;
+    }
+
+    let promise = doAsync();
+    // outputs "in promise code"
+    // (after 2 seconds)
+    // outputs "rejecting..."
+
+You handle promises in much the same way you used to (with something like the q Promise library):
+
+    function doAsync() {
+      let p = new Promise(function (resolve, reject) {
+        setTimeout(function () {
+          console.log('rejecting...');
+          reject();
+        }, 2000);
+      });
+      return p;
+    }
+
+    doAsync().then(function () {
+      console.log('Resolved!');
+    },
+    function () {
+      console.log('Rejected!');
+    });
+    // (after 2 seconds)
+    // outputs "rejecting..."
+    // outputs "Rejected!"
+
+Values passed to `resolve` and `reject` can be used:
+
+    function doAsync() {
+      let p = new Promise(function (resolve, reject) {
+        setTimeout(function () {
+          console.log('rejecting...');
+          reject('Database Error');
+        }, 2000);
+      });
+      return p;
+    }
+
+    doAsync().then(function (value) {
+      console.log('Resolved! ' + value);
+    },
+    function (reason) {
+      console.log('Rejected!' + reason);
+    });
+    // (after 2 seconds)
+    // outputs "rejecting..."
+    // outputs "Rejected! Database Error"
+
+When returning values from within a promise handler, the value returned gets wrapped into a new promise:
+
+    function doAsync() {
+      let p = new Promise(function (resolve, reject) {
+        setTimeout(function () {
+          resolve('OK');
+        }, 2000);
+      });
+      return p;
+    }
+
+    doAsync().then(function (value) {
+      console.log('Resolved! ' + value);
+      return 'For Sure';
+    }).then(function (value) {
+      console.log('Really! ' + value);
+    });
+    // (after 2 seconds)
+    // outputs "Resolved! OK"
+    // outputs "Really! For Sure"
+
+You can also `catch` errors:
+
+    function doAsync() {
+      let p = new Promise(function (resolve, reject) {
+        console.log('in promise code');
+        setTimeout(function () {
+          reject('Database Error');
+        }, 2000);
+      });
+      return p;
+    }
+
+    doAsync().catch(function (reason) {
+      console.log('Error: ' + reason);
+    });
+
+    // (after 2 seconds)
+    // outputs "Error: Database Error"
+
+## Additional Promise Features
+
+### Promise.resolve and Promise.reject
+
+You can immediately resolve a promise with `Promise.resolve`. The same can be done for `Promise.reject`.
+
+    function doAsync() {
+      return Promise.resolve('data');
+    }
+
+    doAsync().then(
+      function (value) { console.log('Success!: ' + value)},
+      function (reason) { console.log('Error! ' + reason)}
+    )
+    // outputs "Success! data"
+
+### Promise.all
+
+`Promise.all` waits until all promises have been resolved.
+
+    let p1 = new Promise(...); // takes 3 seconds to resolve
+    let p2 = new Promise(...); // takes 5 seconds to resolve
+
+    Promise.all([p1, p2]).then(
+      function () { console.log('Success!')},
+      function () { console.log('Error!')}
+    )
+
+    // (after 5 seconds)
+    // outputs "Success!"
+
+As soon as any of the promises reject, then the above outputs "Error!".
+
+### Promise.race
+
+With `Promise.race`, the handled result is the result of the first completed promise.
+
+    let p1 = new Promise(...); // takes 3 seconds to resolve
+    let p2 = new Promise(...); // takes 5 seconds to resolve
+
+    Promise.race([p1, p2]).then(
+      function () { console.log('Success!')},
+      function () { console.log('Error!')}
+    )
+
+    // (after 5 seconds)
+    // outputs "Success!"
 
