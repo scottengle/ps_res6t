@@ -2425,4 +2425,292 @@ In the above case, `newArray` is an instance of both `Perks` and `Array`.
 
 # The Reflect API
 
+The Reflect API is a single object that lets us use function calls to perform:
+
+* Object Construction
+* Method Calls
+* Prototypes
+* Properties
+* Property Extensions
+
+## Construction and Method Calls
+
+The Reflect object is globally available, similar to the `Math` object:
+
+    console.log(typeof Reflect); // outputs "object"
+
+### Reflect.construct
+
+`Reflect.construct` lets you construct objects.
+
+    class Restaurant { }
+
+    let r = Reflect.construct(Restaurant);
+    console.log(r instanceof Restaurant); // outputs "true"
+
+`Reflect.construct` can also take constructor arguments:
+
+    class Restaurant {
+      constructor(name, city) {
+        console.log(`${name} in ${city}`);
+      }
+    }
+    let r = Reflect.construct(Restaurant, ['Phoenix', 'Denver']);
+    // outputs "Phoenix in Denver"
+
+The third argument to `Reflect.construct` is the value of `new.target`:
+
+    class Restaurant {
+      constructor() {
+        console.log(`new.target: ${new.target}`);
+      }
+    }
+    function restaurantMaker() {
+      console.log('in restaurantMaker');
+    }
+    let r = Reflect.construct(Restaurant, ['Phoenix', 'Denver'], restaurantMaker);
+    // outputs
+    // new.target:
+    // function restaurantMaker() {
+    //   console.log('in restaurantMaker');
+    // }
+
+### Reflect.apply
+
+`Reflect.apply` can be used to call a function in any way normally possible (`call`, `apply`, etc).
+The first argument to `Reflect.apply` is the function to call.
+The second argument is the context that the `this` object is set to.
+
+    class Restaurant {
+      constructor() {
+        this.id = 33;
+      }
+      show() {
+        console.log(this.id);
+      }
+    }
+    Reflect.apply(Restaurant.prototype.show, {id: 99}); // outputs "99"
+
+The third argument to `Reflect.apply` is an array of arguments to pass to the function:
+
+    class Restaurant {
+      constructor() {
+        this.id = 33;
+      }
+      show(prefix) {
+        console.log(prefix + this.id);
+      }
+    }
+    Reflect.apply(Restaurant.prototype.show, {id: 22}, ['REST:']);
+    // outputs "REST:22"
+
+## Reflect and Prototypes
+
+### Reflect.getPrototypeOf
+
+`Reflect.getPrototypeOf` gets the prototype of an object:
+
+    class Location {
+      constructor() {
+        console.log('constructing Location');
+      }
+    }
+    class Restaurant extends Location {
+    }
+    console.log(Reflect.getPrototypeOf(Restaurant));
+    // outputs:
+    // constructor() {
+    //   console.log('constructing Location');
+    // }
+
+The prototype of a class is the class' constructor function.
+
+### Reflect.setPrototypeOf
+
+`Reflect.setPrototypeOf` can be used to set the prototype of an object.
+
+    class Restaurant {
+    }
+    let setup = {
+      getId() { return 88; }
+    }
+
+    let r = new Restaurant();
+    Reflect.setPrototypeOf(r, setup);
+    console.log(r.getId()); // outputs "88";
+
+## Reflect and Properties
+
+### Reflect.get
+
+`Reflect.get` can be used to get a property. 
+
+    class Restaurant {
+      constructor() {
+        this.id = 8000;
+      }
+    }
+    let r = new Restaurant();
+    console.log(Reflect.get(r, 'id')); // outputs "8000"
+
+The third argument to `Reflect.get` is the "object receiver", or the value of `this`:
+
+    class Restaurant {
+      constructor() {
+        this._id = 9000;
+      }
+      get id() {
+        return this._id;
+      }
+    }
+    let r = new Restaurant();
+    console.log(Reflect.get(r, 'id', {_id: 8888})); // outputs "8888"
+
+### Reflect.set
+
+`Reflect.set` can be used to set a property.
+
+    class Restaurant {
+      constructor() {
+        this.id = 9000;
+      }
+    }
+    let r = new Restaurant();
+    Reflect.set(r, 'id', 88);
+    console.log(r.id); // outputs "88"
+
+The fourth argument to `Reflect.set` is the "object receiver", or the value of `this`:
+
+    class Restaurant {
+      constructor() {
+        this._id = 9000;
+      }
+      set id(value) {
+        this._id = value;
+      }
+    }
+
+    let r = new Restaurant();
+    let alt = {id: 88};
+    Reflect.set(r, '_id', 88, alt);
+    console.log(r._id);     // outputs "9000"
+    console.log(alt._id);   // outputs "88"
+
+### Reflect.has
+
+`Reflect.has` returns a boolean value if the object has the specified property:
+
+    class Location {
+      constructor() {
+        this.city = "Denver"
+      }
+    }
+    class Restaurant extends Location {
+      constructor() {
+        super();
+        this.id = 9000;
+      }
+    }
+
+    let r = new Restaurant();
+    console.log(Reflect.has(r, 'id'));    // outputs "true"
+    console.log(Reflect.has(r, 'city'));  // outputs "true"
+
+### Reflect.ownKeys
+
+`Reflect.ownKeys` returns an array of keys on an object.
+
+    class Location {
+      constructor() {
+        this.city = "Denver"
+      }
+    }
+    class Restaurant extends Location {
+      constructor() {
+        super();
+        this.id = 9000;
+      }
+    }
+
+    let r = new Restaurant();
+    console.log(Reflect.ownKeys(r)); // outputs "["city", "id"]"
+
+### Reflect.defineProperty
+
+`Reflect.defineProperty` lets you define properties on an object. This is similar to `Object.defineProperty`.
+
+    class Restaurant { }
+
+    let r = new Restaurant();
+
+    Reflect.defineProperty(r, 'id', {
+      value: 2000,
+      configurable: true,
+      enumerable: true
+    });
+
+    console.log(r['id']); // outputs "2000"
+
+### Reflect.deleteProperty
+
+`Reflect.deleteProperty lets you delete properties on an object.
+
+    let rest = {
+      id: 2000
+    };
+
+    console.log(rest.id); // outputs "2000"
+    Reflect.deleteProperty(rest, 'id');
+    console.log(rest.id); // outputs "undefined"
+
+### Reflect.getOwnPropertyDescriptor
+
+`Reflect.getOwnPropertyDescriptor` lets you get property descriptors for an object's properties. This is similar to `Object.getOwnPropertyDescriptor`.
+
+    let rest = {
+      id: 2000
+    };
+    let d = Reflect.getOwnPropertyDescriptor(rest, 'id');
+    console.log(d);
+    // outputs:
+    // {configurable: true, enumerable: true, value: 2000, writable: true}
+
+## Reflect and Property Extensions
+
+### Reflect.preventExtensions
+
+`Reflect.preventExtensions` prevents you from adding new properties to an object.
+
+    let rest = {
+      id: 2000
+    };
+
+    rest.location = 'Denver';
+    console.log(rest.location); // outputs "Denver"
+    
+    Reflect.preventExtensions(rest);
+
+    rest.description = 'Mile High City';
+    console.log(rest.description); // outputs "undefined"
+
+### Reflect.isExtensible
+
+`Reflect.isExtensible` returns a boolean value indicating if an object is extensible.
+
+    let rest = {
+      id: 2000
+    };
+
+    console.log(Reflect.isExtensible(rest)); // outputs "true"
+    Reflect.preventExtensions(rest);
+    console.log(Reflect.isExtensible(rest)); // outputs "false"
+    
 # The Proxy API
+
+## Proxies Defined
+
+## Available Traps
+
+## Get by Proxy
+
+## Calling Functions by Proxy
